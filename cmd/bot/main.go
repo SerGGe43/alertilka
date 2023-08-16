@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/SerGGe43/alertilka/pkg/tg"
 	"github.com/SerGGe43/alertilka/pkg/tinkoff"
+
 	"go.uber.org/zap"
-	"os"
 )
 
 func main() {
@@ -14,12 +16,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	client, err := tinkoff.NewClient(os.Getenv("TinkoffToken"), *l)
+	client, err := tinkoff.NewClient(os.Getenv("TINKOFF_TOKEN"), *l)
 	if err != nil {
 		panic(err)
 	}
 	//fmt.Println(client.GetPriceByTiker([]string{"AAPL", "TCS"}))
-	bot, err := tg.BotInit(os.Getenv("BotToken"))
+	bot, err := tg.BotInit(os.Getenv("BOT_TOKEN"))
 	if err != nil {
 		panic(err)
 	}
