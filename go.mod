@@ -4,6 +4,8 @@ go 1.19
 
 require (
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
+	github.com/lib/pq v1.10.9
+	github.com/pressly/goose v2.7.0+incompatible
 	github.com/tinkoff/invest-api-go-sdk v1.4.6
 	go.uber.org/zap v1.24.0
 )
@@ -14,6 +16,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.0-rc.5 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
