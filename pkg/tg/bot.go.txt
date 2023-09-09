@@ -3,11 +3,9 @@ package tg
 import (
 	"database/sql"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
-	_ "github.com/SerGGe43/alertilka/migrations"
 	"github.com/SerGGe43/alertilka/pkg/tinkoff"
 
 	tgbot "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -36,15 +34,6 @@ var trackingTypeKeyboard = tgbot.NewReplyKeyboard(
 	tgbot.NewKeyboardButtonRow(tgbot.NewKeyboardButton("more than MA")),
 )
 
-var host = os.Getenv("HOST")
-var port = os.Getenv("PORT")
-var user = os.Getenv("USER")
-var password = os.Getenv("PASSWORD")
-var dbname = os.Getenv("DBNAME")
-var sslmode = os.Getenv("SSLMODE")
-
-var dbInfo = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", host, port, user, password, dbname, sslmode)
-
 var updates tgbot.UpdatesChannel
 
 func BotInit(token string) (tgbot.BotAPI, error) {
@@ -56,27 +45,27 @@ func BotInit(token string) (tgbot.BotAPI, error) {
 	return *bot, nil
 }
 
-func migration() {
+func migration(dbInfo string) {
 	db, err := sql.Open("postgres", dbInfo)
 	if err != nil {
 		fmt.Printf("can't open sql: %w", err)
 	}
-	err = goose.Up(db, ".")
+	err = goose.Up(db, "./migrations")
 	if err != nil {
 		fmt.Printf("can't migrate: %w", err)
 	}
 }
 
-func addUser(chatID int64, username string) {
+func addUser(chatID int64, username string, dbInfo string) {
 	db, err := sql.Open("postgres", dbInfo)
 	if err != nil {
 		fmt.Printf("can't open sql: %w", err)
 	}
-	//INSERT INTO "User"(name, chatid, tgid) VALUES($1, $2, $3);
+	//INSERT INTO "user"(name, chatid, tgid) VALUES($1, $2, $3);
 	defer db.Close()
-	if chats := db.QueryRow(`SELECT chatid FROM "User" WHERE chatid = $1`, chatID).Scan(); chats != nil {
+	if chats := db.QueryRow(`SELECT chatid FROM "user" WHERE chatid = $1`, chatID).Scan(); chats != nil {
 		if chats == sql.ErrNoRows {
-			data := `INSERT INTO "User"(name, chatid) VALUES($1, $2);`
+			data := `INSERT INTO "user"(name, chatid) VALUES($1, $2);`
 			if _, err := db.Exec(data, `@`+username, chatID); err != nil {
 				fmt.Printf("can't insert: %w", err)
 			}
@@ -85,14 +74,14 @@ func addUser(chatID int64, username string) {
 	}
 }
 
-func addTickerToTrack(chatID int64, ticker, tickerName string) {
+func addTickerToTrack(chatID int64, ticker, tickerName string, dbInfo string) {
 	var alertID int
 	db, err := sql.Open("postgres", dbInfo)
 	if err != nil {
 		fmt.Printf("can't open sql: %w", err)
 	}
 	defer db.Close()
-	data := `INSERT INTO alert(ticker, name, userID) VALUES($1, $2, (SELECT id FROM "User" WHERE chatID = $3));`
+	data := `INSERT INTO alert(ticker, name, userID) VALUES($1, $2, (SELECT id FROM "user" WHERE chatID = $3));`
 	if _, err := db.Exec(data, ticker, tickerName, chatID); err != nil {
 		fmt.Printf("can't insert ticker to track: %w", err)
 	}
@@ -103,22 +92,22 @@ func addTickerToTrack(chatID int64, ticker, tickerName string) {
 	_ = sendMessage("Your alert successfully added", chatID)
 }
 
-func addTrackingType(trackingType, name string, value int, chatID int64) {
+func addTrackingType(trackingType, name string, value int, chatID int64, dbInfo string) {
 	db, err := sql.Open("postgres", dbInfo)
 	if err != nil {
 		fmt.Printf("can't open sql: %w", err)
 	}
 	defer db.Close()
 	data := `INSERT INTO indicator(alertid, indicatorID, value) VALUES((SELECT id FROM alert 
-                                                                     WHERE userID = (SELECT id FROM "User" WHERE chatID = $1) AND name = $2), $3, $4);`
+                                                                     WHERE userID = (SELECT id FROM "user" WHERE chatID = $1) AND name = $2), $3, $4);`
 	if _, err := db.Exec(data, chatID, name, trackingType, value); err != nil {
 		fmt.Printf("can't insert: %w", err)
 	}
 }
 
-func MainMenu(bot tgbot.BotAPI, client tinkoff.Client) {
+func MainMenu(bot tgbot.BotAPI, client tinkoff.Client, dbInfo string) {
 	Bot = bot
-	migration()
+	migration(dbInfo)
 	for update := range updates {
 		if update.Message == nil {
 			continue
@@ -126,7 +115,7 @@ func MainMenu(bot tgbot.BotAPI, client tinkoff.Client) {
 		chatID := update.Message.Chat.ID
 		username := update.Message.Chat.UserName
 		//fmt.Println(username, tgid)
-		addUser(chatID, username)
+		addUser(chatID, username, dbInfo)
 		commandHandler(update.Message.Text, client, chatID)
 	}
 }
@@ -154,7 +143,7 @@ func priceByTicker(client tinkoff.Client, chatID int64) {
 	updates.Clear()
 }
 
-func commandHandler(text string, client tinkoff.Client, chatID int64) {
+func commandHandler(text string, client tinkoff.Client, chatID int64, dbInfo) {
 	switch text {
 	case "/start":
 		_ = sendMessage("Hello, I'm Alertilka bot.\n "+
@@ -165,7 +154,7 @@ func commandHandler(text string, client tinkoff.Client, chatID int64) {
 	case "Price by ticker":
 		priceByTicker(client, chatID)
 	case "New alert":
-		newAlert(chatID)
+		newAlert(chatID, dbInfo)
 	default:
 		_ = sendMessage("I don't know that command", chatID)
 		chooseKeyboard("MainMenu", chatID)
@@ -240,7 +229,7 @@ func newAlert(chatID int64) {
 		tickerName = update.Message.Text
 		break
 	}
-	addTickerToTrack(chatID, ticker, tickerName)
+	addTickerToTrack(chatID, ticker, tickerName, dbInfo)
 }
 
 func selectTrackingType(chatID int64, name string) {
@@ -268,5 +257,5 @@ func selectTrackingType(chatID int64, name string) {
 		}
 		break
 	}
-	addTrackingType(trackingType, name, value, chatID)
+	addTrackingType(trackingType, name, value, chatID, dbInfo)
 }
