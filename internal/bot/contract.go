@@ -9,4 +9,7 @@ const (
 
 type Bot interface {
 	SendMenu(chatId int64) error
+	SendHelp(chatId int64) error
+	SendTickerRequest(chatId int64) error
+	SendTickerPrices(chatID int64, prices string) error
 }

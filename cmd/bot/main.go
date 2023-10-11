@@ -8,6 +8,7 @@ import (
 	"github.com/SerGGe43/alertilka/internal/postgres"
 	"github.com/SerGGe43/alertilka/internal/tg"
 	tgbot "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/pressly/goose/v3"
 	"os"
 
 	"github.com/SerGGe43/alertilka/pkg/tinkoff"
@@ -35,7 +36,7 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("can't create logger for tinkoff client: %w", err)
 	}
-	_, err = tinkoff.NewClient(os.Getenv("TINKOFF_TOKEN"), *l)
+	client, err := tinkoff.NewClient(os.Getenv("TINKOFF_TOKEN"), *l)
 	if err != nil {
 		return fmt.Errorf("can't create tinkoff client: %w", err)
 	}
@@ -45,6 +46,7 @@ func run() error {
 		return fmt.Errorf("can't create postgres connection: %w", err)
 	}
 	userDB := postgres.NewUser(db)
+	err = goose.Up(db, "migrations")
 
 	api, err := tgbot.NewBotAPI(os.Getenv("BOT_TOKEN"))
 	if err != nil {
@@ -58,7 +60,7 @@ func run() error {
 	}
 	eventChan, _ := cons.Consume()
 
-	ctrl := controller.NewController(userDB, bot)
+	ctrl := controller.NewController(userDB, bot, *client)
 	err = ctrl.Run(context.TODO(), eventChan)
 	if err != nil {
 		return fmt.Errorf("can't run controller: %w", err)

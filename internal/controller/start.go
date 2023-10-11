@@ -14,6 +14,7 @@ func (c *Controller) HandleStart(e domain.Event) error {
 		_, err = c.UserDB.Add(domain.User{
 			Name:   e.Name,
 			ChatId: e.ChatId,
+			State:  domain.MAIN_MENU,
 		})
 		if err != nil {
 			return fmt.Errorf("can't add user to db: %w", err)

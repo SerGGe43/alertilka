@@ -11,7 +11,8 @@ $$;
 CREATE TABLE IF NOT EXISTS "user" (
                                       id SERIAL PRIMARY KEY,
                                       name varchar(32),
-                                      chatID bigint
+                                      chatID bigint,
+                                      state int
 );
 CREATE TABLE IF NOT EXISTS alert (
                                      id SERIAL PRIMARY KEY,

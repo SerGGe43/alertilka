@@ -30,3 +30,33 @@ func (b *Bot) SendMenu(chatID int64) error {
 	}
 	return nil
 }
+
+func (b *Bot) SendHelp(chatID int64) error {
+	msg := tgbot.NewMessage(chatID, "I understand these commands:\n"+
+		bot.Help+"\n"+
+		bot.PriceByTicker+"\n"+
+		bot.NewAlert)
+	_, err := b.api.Send(msg)
+	if err != nil {
+		return fmt.Errorf("can't send help: %w", err)
+	}
+	return nil
+}
+
+func (b *Bot) SendTickerRequest(chatID int64) error {
+	msg := tgbot.NewMessage(chatID, "Enter tickers the price of which you are interested in")
+	_, err := b.api.Send(msg)
+	if err != nil {
+		return fmt.Errorf("can't send ticker request: %w", err)
+	}
+	return nil
+}
+
+func (b *Bot) SendTickerPrices(chatID int64, prices string) error {
+	msg := tgbot.NewMessage(chatID, prices)
+	_, err := b.api.Send(msg)
+	if err != nil {
+		return fmt.Errorf("can't send ticker prices: %w", err)
+	}
+	return nil
+}

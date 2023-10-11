@@ -51,3 +51,26 @@ func (u User) Add(user domain.User) (int64, error) {
 	}
 	return id, nil
 }
+
+func (u User) GetState(chatID int64) (int64, error) {
+	query := `SELECT state FROM "user" WHERE chatID = $1`
+	var state int64
+	err := u.db.QueryRow(query, chatID).Scan(&state)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return -1, fmt.Errorf("User doesn't exist: %w", err)
+		}
+		return -1, fmt.Errorf("Can't get user by chatID %w", err)
+	}
+	return state, nil
+}
+
+func (u User) SetState(chatID, state int64) error {
+	query := `UPDATE "user" SET state = $1
+				WHERE chatID = $2`
+	err := u.db.QueryRow(query, state, chatID)
+	if err != nil {
+		return fmt.Errorf("Can't set state: %w", err)
+	}
+	return nil
+}
