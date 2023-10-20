@@ -11,10 +11,11 @@ import (
 )
 
 type Controller struct {
-	UserDB  repository.User
-	AlertDB repository.Alert
-	Bot     bot.Bot
-	Client  tinkoff.Client
+	UserDB      repository.User
+	AlertDB     repository.Alert
+	IndicatorDB repository.Indicator
+	Bot         bot.Bot
+	Client      tinkoff.Client
 }
 
 func NewController(userDB repository.User, bot bot.Bot, client tinkoff.Client) *Controller {

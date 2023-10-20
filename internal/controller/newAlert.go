@@ -19,12 +19,13 @@ func (c *Controller) HandleNewAlert(e domain.Event) error {
 }
 
 func (c *Controller) newAlertHandler(e domain.Event) error {
+	//TODO придумать, как ловить следующие сообщения, чтобы добавить имя, индикаторid
 	ticker := strings.ToUpper(e.Message)
 	user, err := c.UserDB.GetByChatId(e.ChatId)
 	if err != nil {
 		return fmt.Errorf("can't get user in newAlertHandler: %w", err)
 	}
-	_, err = c.AlertDB.Add(domain.Alert{
+	alertID, err := c.AlertDB.Add(domain.Alert{
 		Ticker: ticker,
 		Name:   "",
 		UserID: user.Id,
@@ -32,6 +33,11 @@ func (c *Controller) newAlertHandler(e domain.Event) error {
 	if err != nil {
 		return fmt.Errorf("can't add alert: %w", err)
 	}
+	_, err = c.IndicatorDB.Add(domain.Indicator{
+		AlertID:     alertID,
+		IndicatorID: "",
+		Value:       0,
+	})
 	return nil
 }
 

@@ -9,8 +9,8 @@ const (
 )
 
 type Indicator struct {
-	id          int
-	alertID     int
-	indicatorID TrackingType
-	value       int
+	Id          int64
+	AlertID     int64
+	IndicatorID TrackingType
+	Value       int64
 }
