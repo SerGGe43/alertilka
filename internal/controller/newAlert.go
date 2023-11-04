@@ -19,7 +19,7 @@ func (c *Controller) HandleNewAlert(e domain.Event) error {
 }
 
 func (c *Controller) newAlertHandler(e domain.Event) error {
-	//TODO придумать, как ловить следующие сообщения, чтобы добавить имя, индикаторid
+	// TODO придумать, как ловить следующие сообщения, чтобы добавить имя, индикаторid
 	ticker := strings.ToUpper(e.Message)
 	user, err := c.UserDB.GetByChatId(e.ChatId)
 	if err != nil {
@@ -33,14 +33,34 @@ func (c *Controller) newAlertHandler(e domain.Event) error {
 	if err != nil {
 		return fmt.Errorf("can't add alert: %w", err)
 	}
-	_, err = c.IndicatorDB.Add(domain.Indicator{
-		AlertID:     alertID,
-		IndicatorID: "",
-		Value:       0,
-	})
+	err = c.addIndicator(alertID)
+	if err != nil {
+		return fmt.Errorf("can't add indicator: %w", err)
+	}
+	err = c.Bot.SendNameRequest(e.ChatId)
+	if err != nil {
+		return fmt.Errorf("can't send name request: %w", err)
+	}
+	err = c.UserDB.SetState(e.ChatId, domain.ADD_NAME_TO_ALERT)
+	if err != nil {
+		return fmt.Errorf("can't set state add name to alert: %w", err)
+	}
 	return nil
 }
 
 func (c *Controller) addAlertName(e domain.Event) error {
+	user, err := c.UserDB.GetByChatId(e.ChatId)
+	if err != nil {
+		return fmt.Errorf("can't get user by chatID in addAlertName: %w", err)
+	}
+	err = c.AlertDB.AddName(e.Message, user.Id)
+	fmt.Println(c.AlertDB.GetByUserID(user.Id))
+	if err != nil {
+		return fmt.Errorf("can't set name: %w", err)
+	}
+	err = c.UserDB.SetState(e.ChatId, domain.ADD_INDICATOR_ID)
+	if err != nil {
+		return fmt.Errorf("can't set state add indicator id: %w", err)
+	}
 	return nil
 }

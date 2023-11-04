@@ -12,4 +12,5 @@ type Bot interface {
 	SendHelp(chatId int64) error
 	SendTickerRequest(chatId int64) error
 	SendTickerPrices(chatID int64, prices string) error
+	SendNameRequest(chatID int64) error
 }

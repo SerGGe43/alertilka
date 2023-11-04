@@ -30,9 +30,10 @@ func (u User) GetById(id int64) (*domain.User, error) {
 }
 
 func (u User) GetByChatId(chatID int64) (*domain.User, error) {
-	query := `SELECT (id, name, chatID) FROM "user" WHERE chatID = $1`
+	query := `SELECT id, name, chatID, state FROM "user" WHERE chatID = $1`
 	user := domain.User{}
-	err := u.db.QueryRow(query, chatID).Scan(&user.Id, &user.Name, &user.ChatId)
+	err := u.db.QueryRow(query, chatID).Scan(&user.Id, &user.Name, &user.ChatId, &user.State)
+	fmt.Println(user)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -43,9 +44,9 @@ func (u User) GetByChatId(chatID int64) (*domain.User, error) {
 }
 
 func (u User) Add(user domain.User) (int64, error) {
-	query := `INSERT INTO "user"(name, chatID) VALUES ($1, $2) RETURNING id`
+	query := `INSERT INTO "user"(name, chatID, state) VALUES ($1, $2, $3) RETURNING id`
 	var id int64
-	err := u.db.QueryRow(query, user.Name, user.ChatId).Scan(&id)
+	err := u.db.QueryRow(query, user.Name, user.ChatId, user.State).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("can't add user %w", err)
 	}
@@ -58,7 +59,7 @@ func (u User) GetState(chatID int64) (int64, error) {
 	err := u.db.QueryRow(query, chatID).Scan(&state)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return -1, fmt.Errorf("User doesn't exist: %w", err)
+			return -1, sql.ErrNoRows
 		}
 		return -1, fmt.Errorf("Can't get user by chatID %w", err)
 	}

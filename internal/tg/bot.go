@@ -3,6 +3,7 @@ package tg
 import (
 	"fmt"
 	"github.com/SerGGe43/alertilka/internal/bot"
+	"github.com/SerGGe43/alertilka/internal/domain"
 	tgbot "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -57,6 +58,30 @@ func (b *Bot) SendTickerPrices(chatID int64, prices string) error {
 	_, err := b.api.Send(msg)
 	if err != nil {
 		return fmt.Errorf("can't send ticker prices: %w", err)
+	}
+	return nil
+}
+
+func (b *Bot) SendNameRequest(chatID int64) error {
+	msg := tgbot.NewMessage(chatID, "Enter name for your alert")
+	_, err := b.api.Send(msg)
+	if err != nil {
+		return fmt.Errorf("can't send name request: %w", err)
+	}
+	return nil
+}
+
+func (b *Bot) SendIndicatorIdRequest(chatID int64) error {
+	var indicatorKeyboard = tgbot.NewReplyKeyboard(
+		tgbot.NewKeyboardButtonRow(tgbot.NewKeyboardButton(domain.LowerThanValue)),
+		tgbot.NewKeyboardButtonRow(tgbot.NewKeyboardButton(domain.MoreThanValue)),
+		tgbot.NewKeyboardButtonRow(tgbot.NewKeyboardButton(domain.MoreThanMA)),
+	)
+	msg := tgbot.NewMessage(chatID, "Choose indicator type")
+	msg.ReplyMarkup = indicatorKeyboard
+	_, err := b.api.Send(msg)
+	if err != nil {
+		return fmt.Errorf("can't indicator keyboard: %w", err)
 	}
 	return nil
 }

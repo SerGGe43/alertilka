@@ -6,4 +6,5 @@ type Alert interface {
 	GetByID(id int64) (*domain.Alert, error)
 	GetByUserID(id int64) ([]domain.Alert, error)
 	Add(alert domain.Alert) (int64, error)
+	AddName(name string, userid int64) error
 }

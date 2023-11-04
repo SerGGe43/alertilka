@@ -18,16 +18,16 @@ func NewAlert(db *sql.DB) *Alert {
 }
 
 func (a *Alert) Add(alert domain.Alert) (int64, error) {
-	query := `INSERT INTO alert (ticker, name, userID) VALUES ($1, $2, $3) RETURNING id`
+	query := `INSERT INTO alert (ticker, userID) VALUES ($1, $2) RETURNING id`
 	var id int64
-	err := a.db.QueryRow(query, alert.Ticker, alert.Name, alert.UserID).Scan(&id)
+	err := a.db.QueryRow(query, alert.Ticker, alert.UserID).Scan(&id)
 	if err != nil {
 		return -1, fmt.Errorf("can't add alert: %w", err)
 	}
 	return id, nil
 }
 
-func (a *Alert) GetById(id int64) (*domain.Alert, error) {
+func (a *Alert) GetByID(id int64) (*domain.Alert, error) {
 	query := `SELECT * FROM alert WHERE id = $1`
 	alert := domain.Alert{}
 	err := a.db.QueryRow(query, id).Scan(&alert.Id, &alert.Ticker, &alert.Name, &alert.UserID)
@@ -40,7 +40,7 @@ func (a *Alert) GetById(id int64) (*domain.Alert, error) {
 	return &alert, nil
 }
 
-func (a *Alert) GetByUserId(userID int64) ([]domain.Alert, error) {
+func (a *Alert) GetByUserID(userID int64) ([]domain.Alert, error) {
 	query := `SELECT * FROM alert WHERE userid = $1`
 	var alerts []domain.Alert
 	rows, err := a.db.Query(query, userID)
@@ -62,4 +62,16 @@ func (a *Alert) GetByUserId(userID int64) ([]domain.Alert, error) {
 	}
 
 	return alerts, nil
+}
+
+func (a *Alert) AddName(name string, userid int64) error {
+	query := `UPDATE alert
+				SET name = $1
+				WHERE name IS NULL and userid = $2`
+	err := a.db.QueryRow(query, name, userid)
+	fmt.Println(name)
+	if err != nil {
+		fmt.Errorf("can't set name to ticker: %w")
+	}
+	return nil
 }

@@ -46,6 +46,8 @@ func run() error {
 		return fmt.Errorf("can't create postgres connection: %w", err)
 	}
 	userDB := postgres.NewUser(db)
+	alertDB := postgres.NewAlert(db)
+	indicatorDB := postgres.NewIndicator(db)
 	err = goose.Up(db, "migrations")
 
 	api, err := tgbot.NewBotAPI(os.Getenv("BOT_TOKEN"))
@@ -60,7 +62,7 @@ func run() error {
 	}
 	eventChan, _ := cons.Consume()
 
-	ctrl := controller.NewController(userDB, bot, *client)
+	ctrl := controller.NewController(userDB, alertDB, indicatorDB, bot, *client)
 	err = ctrl.Run(context.TODO(), eventChan)
 	if err != nil {
 		return fmt.Errorf("can't run controller: %w", err)

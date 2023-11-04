@@ -3,9 +3,9 @@ package domain
 type TrackingType string
 
 const (
-	MoreThanValue  TrackingType = "more than price"
-	LowerThanValue TrackingType = "lower than price"
-	MoreThanMA     TrackingType = "more than MA"
+	MoreThanValue  = "more than price"
+	LowerThanValue = "lower than price"
+	MoreThanMA     = "more than MA"
 )
 
 type Indicator struct {

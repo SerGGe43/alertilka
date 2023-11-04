@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"github.com/SerGGe43/alertilka/internal/bot"
 	"github.com/SerGGe43/alertilka/internal/domain"
@@ -18,11 +19,14 @@ type Controller struct {
 	Client      tinkoff.Client
 }
 
-func NewController(userDB repository.User, bot bot.Bot, client tinkoff.Client) *Controller {
+func NewController(userDB repository.User, alertDB repository.Alert, indicatorDB repository.Indicator,
+	bot bot.Bot, client tinkoff.Client) *Controller {
 	return &Controller{
-		UserDB: userDB,
-		Bot:    bot,
-		Client: client,
+		UserDB:      userDB,
+		AlertDB:     alertDB,
+		IndicatorDB: indicatorDB,
+		Bot:         bot,
+		Client:      client,
 	}
 }
 
@@ -30,7 +34,7 @@ func (c *Controller) Run(ctx context.Context, event <-chan domain.Event) error {
 	for {
 		select {
 		case e := <-event:
-			err := c.stateHandler(e)
+			err := c.stateGetter(e)
 			if err != nil {
 				log.Println(err)
 			}
@@ -40,8 +44,28 @@ func (c *Controller) Run(ctx context.Context, event <-chan domain.Event) error {
 	}
 }
 
-func (c *Controller) stateHandler(e domain.Event) error {
+func (c *Controller) stateGetter(e domain.Event) error {
 	state, err := c.UserDB.GetState(e.ChatId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			state = 0
+			err = c.stateHandler(state, e)
+			if err != nil {
+				return fmt.Errorf("can't handle state: %w", err)
+			}
+			return nil
+		}
+		return fmt.Errorf("can't get state: %w", err)
+	}
+	err = c.stateHandler(state, e)
+	if err != nil {
+		return fmt.Errorf("can't handle state: %w", err)
+	}
+	return nil
+}
+
+func (c *Controller) stateHandler(state int64, e domain.Event) error {
+	var err error
 	switch state {
 	case domain.MAIN_MENU:
 		err = c.mainMenuHandler(e)
@@ -49,10 +73,12 @@ func (c *Controller) stateHandler(e domain.Event) error {
 		err = c.tickerHandler(e)
 	case domain.NEW_ALERT:
 		err = c.newAlertHandler(e)
+	case domain.ADD_NAME_TO_ALERT:
+		err = c.addAlertName(e)
+	case domain.ADD_INDICATOR_ID:
+		err = c.addIndicatorId(e)
 	}
 
-	//case "New alert":
-	//	newAlert(chatID, dbInfo)
 	//default:
 	//	_ = sendMessage("I don't know that command", chatID)
 	//	chooseKeyboard("MainMenu", chatID)
